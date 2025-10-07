@@ -19,3 +19,67 @@ This repo builds a full pipeline for **graph signal prediction & reconstruction*
 python3 -m venv .venv && source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
+```
+### 1) Create the UAV dataset
+
+This step runs the simulation, preprocessing, and graph building.
+
+
+```bash
+python -m src.uavnet.make_dataset --outdir data/processed/run1
+```
+
+### 2) Train the Graph Autoencoder (GAE)
+
+Trains a small encoder (SAGEConv → latent=20 → global mean pool) + MLP decoder to reconstruct node signals.
+
+```bash
+python -m src.uavnet.train_gae \
+  --data_dir data/processed/run1 \
+  --epochs 200 \
+  --device cpu
+```
+
+Evaluate GAE reconstruction
+
+```bash
+python -m src.uavnet.eval_gae --data_dir data/processed/run1
+```
+
+### 3) Koopman Autoencoder (latent forecasting)
+
+#### 3.1 Preprocess for KAE (your notebook logic, separated)
+
+This turns the saved GAE latents into tensors for the Koopman model using your original steps (min–max scaling, channel add, TL windows).
+
+```bash
+python -m src.uavnet.koopman_preproc_user \
+  --data_dir data/processed/run1 \
+  --TL 50 \
+  --num_uavs 20 \
+  --bottle 8
+```
+
+#### 3.2 Train the KAE on graph embeddings
+
+```bash
+python -m src.uavnet.koopman_train_user \
+  --data_dir data/processed/run1 \
+  --epochs 400 \
+  --device cpu \
+  --lr 1e-2 \
+  --batch_size 16 \
+  --learning_rate_change 0.2 \
+  --epoch_update 300 350 \
+  --backward 0
+```
+
+#### 3.3 Evaluate GKAE predictions
+
+```bash
+python -m src.uavnet.koopman_eval_user \
+  --data_dir data/processed/run1 \
+  --pred_length 1 \
+  --device cpu
+```
+
