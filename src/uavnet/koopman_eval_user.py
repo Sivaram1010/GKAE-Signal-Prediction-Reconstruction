@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# This file incorporates and modifies code inspired by erichson/koopmanAE (GPL-3.0).
+# Source: https://github.com/erichson/koopmanAE
+
 from pathlib import Path
 import argparse
 import numpy as np
